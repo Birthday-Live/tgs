@@ -3,462 +3,146 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telegram 發照片 + 按鈕</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      min-height: 100vh;
-      padding: 20px;
-    }
-    
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-    }
-    
-    header {
-      background: linear-gradient(90deg, #0088cc, #00aced);
-      color: white;
-      padding: 25px 30px;
-      text-align: center;
-    }
-    
-    h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
-    }
-    
-    .subtitle {
-      font-size: 16px;
-      opacity: 0.9;
-    }
-    
-    .content {
-      padding: 30px;
-    }
-    
-    .group {
-      margin-bottom: 25px;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #2c3e50;
-    }
-    
-    input, textarea {
-      width: 100%;
-      padding: 12px 15px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 16px;
-      transition: border-color 0.3s;
-    }
-    
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: #0088cc;
-      box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.2);
-    }
-    
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-    
-    .button-section {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 25px 0;
-    }
-    
-    .button-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    
-    .button-header h3 {
-      color: #2c3e50;
-    }
-    
-    .btn {
-      background: #0088cc;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: 600;
-      transition: all 0.3s;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .btn:hover {
-      background: #006699;
-      transform: translateY(-2px);
-    }
-    
-    .btn i {
-      font-size: 18px;
-    }
-    
-    .btn-delete {
-      background: #e74c3c;
-    }
-    
-    .btn-delete:hover {
-      background: #c0392b;
-    }
-    
-    .button-item {
-      background: white;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
-      position: relative;
-    }
-    
-    .delete-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #e74c3c;
-      color: white;
-      border: none;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .action-buttons {
-      display: flex;
-      gap: 15px;
-      margin-top: 20px;
-    }
-    
-    .generate-btn {
-      background: #27ae60;
-      flex: 1;
-    }
-    
-    .generate-btn:hover {
-      background: #219653;
-    }
-    
-    .reset-btn {
-      background: #95a5a6;
-    }
-    
-    .reset-btn:hover {
-      background: #7f8c8d;
-    }
-    
-    .result-container {
-      margin-top: 30px;
-      background: #e3f2fd;
-      border-radius: 8px;
-      padding: 20px;
-      border-left: 4px solid #0088cc;
-    }
-    
-    .result-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: #2c3e50;
-    }
-    
-    #result {
-      background: white;
-      padding: 15px;
-      border-radius: 6px;
-      font-family: monospace;
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px dashed #0088cc;
-    }
-    
-    .copy-btn {
-      background: #9b59b6;
-      margin-top: 15px;
-      width: 100%;
-    }
-    
-    .copy-btn:hover {
-      background: #8e44ad;
-    }
-    
-    .instructions {
-      background: #fff8e1;
-      border-radius: 8px;
-      padding: 20px;
-      margin-top: 30px;
-      border-left: 4px solid #ffc107;
-    }
-    
-    .instructions h3 {
-      color: #2c3e50;
-      margin-bottom: 10px;
-    }
-    
-    .instructions ul {
-      padding-left: 20px;
-    }
-    
-    .instructions li {
-      margin-bottom: 8px;
-    }
-    
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: #7f8c8d;
-      font-size: 14px;
-      border-top: 1px solid #eee;
-      margin-top: 30px;
-    }
-    
-    @media (max-width: 600px) {
-      .content {
-        padding: 20px;
-      }
-      
-      .action-buttons {
-        flex-direction: column;
-      }
-    }
-  </style>
+  <title>Telegram 消息发送工具</title>
+  <link rel="stylesheet" href="c.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Telegram 發照片 + 按鈕</h1>
-      <p class="subtitle">輕鬆創建帶按鈕的照片消息並發送到頻道</p>
+      <h1>Telegram 消息发送工具</h1>
+      <p class="subtitle">选择一种消息类型并配置参数</p>
     </header>
     
     <div class="content">
-      <div class="group">
-        <label for="token">Bot Token</label>
-        <input type="text" id="token" placeholder="輸入您的 Bot Token">
+      <div class="message-type-selector">
+        <div class="type-option active" data-type="photo-url">
+          <i class="fas fa-link"></i>
+          <h3>文字 + 图片链接 + 按钮</h3>
+          <p>使用网络图片链接发送带按钮的消息</p>
+        </div>
+        <div class="type-option" data-type="photo-base64">
+          <i class="fas fa-code"></i>
+          <h3>文字 + Base64图片 + 按钮</h3>
+          <p>使用Base64编码图片发送带按钮的消息</p>
+        </div>
+        <div class="type-option" data-type="text-only">
+          <i class="fas fa-font"></i>
+          <h3>只文字 + 按钮</h3>
+          <p>仅发送文字消息带按钮</p>
+        </div>
       </div>
       
-      <div class="group">
-        <label for="chat_id">頻道 ID 或 @username</label>
-        <input type="text" id="chat_id" placeholder="例如：-100123456789 或 @channelname">
+      <div id="photo-url-form" class="form-section active">
+        <div class="group">
+          <label for="token">Bot Token</label>
+          <input type="text" id="token" placeholder="输入您的 Bot Token">
+        </div>
+        
+        <div class="group">
+          <label for="chat_id">频道 ID 或 @username</label>
+          <input type="text" id="chat_id" placeholder="例如：-100123456789 或 @channelname">
+        </div>
+        
+        <div class="group">
+          <label for="photo_url">图片链接 (https://...)</label>
+          <input type="url" id="photo_url" placeholder="输入图片的完整 URL">
+        </div>
+        
+        <div class="group">
+          <label for="caption">说明文字 (caption，可选)</label>
+          <textarea id="caption" placeholder="输入图片说明文字（支持 HTML）"></textarea>
+        </div>
       </div>
       
-      <div class="group">
-        <label for="photo_url">照片連結 (https://...)</label>
-        <input type="url" id="photo_url" placeholder="輸入照片的完整 URL">
+      <div id="photo-base64-form" class="form-section">
+        <div class="group">
+          <label for="base64-token">Bot Token</label>
+          <input type="text" id="base64-token" placeholder="输入您的 Bot Token">
+        </div>
+        
+        <div class="group">
+          <label for="base64-chat_id">频道 ID 或 @username</label>
+          <input type="text" id="base64-chat_id" placeholder="例如：-100123456789 或 @channelname">
+        </div>
+        
+        <div class="group">
+          <label for="photo_base64">Base64 编码</label>
+          <textarea id="photo_base64" placeholder="粘贴完整的 Base64 编码（包含 data:image/jpeg;base64, 前缀）"></textarea>
+          <small>注意：必须包含完整前缀，如 data:image/jpeg;base64,</small>
+        </div>
+        
+        <div class="group">
+          <label for="base64-caption">说明文字 (caption，可选)</label>
+          <textarea id="base64-caption" placeholder="输入图片说明文字（支持 HTML）"></textarea>
+        </div>
       </div>
       
-      <div class="group">
-        <label for="caption">說明文字 (caption，可選)</label>
-        <textarea id="caption" placeholder="輸入照片說明文字（支援 HTML）"></textarea>
+      <div id="text-only-form" class="form-section">
+        <div class="group">
+          <label for="text-token">Bot Token</label>
+          <input type="text" id="text-token" placeholder="输入您的 Bot Token">
+        </div>
+        
+        <div class="group">
+          <label for="text-chat_id">频道 ID 或 @username</label>
+          <input type="text" id="text-chat_id" placeholder="例如：-100123456789 或 @channelname">
+        </div>
+        
+        <div class="group">
+          <label for="message_text">消息内容</label>
+          <textarea id="message_text" placeholder="输入要发送的文字消息（支持 HTML）"></textarea>
+        </div>
       </div>
       
       <div class="button-section">
         <div class="button-header">
-          <h3>按鈕設定</h3>
+          <h3>按钮设置</h3>
           <button class="btn" onclick="addButton()">
-            <i>+</i> 添加按鈕
+            <i class="fas fa-plus"></i> 添加按钮
           </button>
         </div>
         
         <div id="buttons-container">
-          <!-- 按鈕將動態添加到這裡 -->
+          <!-- 按钮将动态添加到这里 -->
         </div>
       </div>
       
       <div class="action-buttons">
         <button class="btn generate-btn" onclick="generate()">
-          生成 Telegram 鏈接
+          <i class="fas fa-magic"></i> 生成 Telegram 链接
         </button>
         <button class="btn reset-btn" onclick="resetForm()">
-          重置表單
+          <i class="fas fa-redo"></i> 重置表单
         </button>
       </div>
       
       <div class="result-container">
-        <div class="result-title">生成的 Telegram 鏈接</div>
-        <div id="result">填寫完畢後點擊上方按鈕生成鏈接</div>
+        <div class="result-title">生成的 Telegram 链接</div>
+        <div id="result">填写完毕后点击上方按钮生成链接</div>
         <button class="btn copy-btn" onclick="copyToClipboard()">
-          複製鏈接到剪貼板
+          <i class="fas fa-copy"></i> 复制链接到剪贴板
         </button>
       </div>
       
       <div class="instructions">
-        <h3>使用說明</h3>
+        <h3>使用说明</h3>
         <ul>
-          <li>獲取 Bot Token：與 @BotFather 對話創建機器人並獲取 Token</li>
-          <li>頻道 ID：將機器人添加為頻道管理員後，可找ID获取bot获取，頻道 ID 通常為負數（如 -100123456789）</li>
-          <li>照片連結：必須是可公開訪問的 HTTPS 圖片 URL</li>
-          <li>點擊生成的鏈接將直接向 Telegram 發送消息</li>
-          <li>如需測試，請確保機器人有權限發送到目標頻道</li>
+          <li>获取 Bot Token：与 @BotFather 对话创建机器人并获取 Token</li>
+          <li>频道 ID：将机器人添加为频道管理员后，频道 ID 通常为负数（如 -100123456789）</li>
+          <li>图片链接：必须是可公开访问的 HTTPS 图片 URL</li>
+          <li>Base64 编码：必须包含完整前缀（如 data:image/jpeg;base64,）</li>
+          <li>点击生成的链接将直接向 Telegram 发送消息</li>
+          <li>如需测试，请确保机器有权限发送到目标频道</li>
         </ul>
       </div>
     </div>
     
     <footer>
-      <p>© 2026 Telegram 照片發送工具 | 輕鬆創建帶按鈕的消息</p>
-      </footer>
-    </div>
+      <p>© 2026 Telegram 消息发送工具 | 轻松创建带按钮的消息</p>
+    </footer>
+  </div>
 
-  <script>
-    let btnCounter = 0;
-    
-    // 預設添加兩個按鈕
-    window.onload = function() {
-      addButton();
-      addButton();
-    };
-    
-    function addButton() {
-      btnCounter++;
-      const container = document.getElementById('buttons-container');
-      
-      const buttonDiv = document.createElement('div');
-      buttonDiv.className = 'button-item';
-      buttonDiv.innerHTML = `
-        <button class="delete-btn" onclick="removeButton(this)">×</button>
-        <div class="group">
-          <label>按鈕 ${btnCounter} 文字</label>
-          <input type="text" class="btn-text" placeholder="按鈕顯示文字">
-        </div>
-        <div class="group">
-          <label>按鈕 ${btnCounter} 連結</label>
-          <input type="url" class="btn-url" placeholder="https://example.com">
-        </div>
-      `;
-      
-      container.appendChild(buttonDiv);
-    }
-    
-    function removeButton(button) {
-      const buttonItem = button.parentElement;
-      buttonItem.remove();
-      
-      // 更新剩餘按鈕的編號
-      const buttons = document.querySelectorAll('.button-item');
-      buttons.forEach((btn, index) => {
-        const labels = btn.querySelectorAll('label');
-        labels[0].textContent = `按鈕 ${index + 1} 文字`;
-        labels[1].textContent = `按鈕 ${index + 1} 連結`;
-      });
-      
-      btnCounter = buttons.length;
-    }
-    
-    function generate() {
-      const token = document.getElementById('token').value.trim();
-      const chat_id = document.getElementById('chat_id').value.trim();
-      const photo_url = document.getElementById('photo_url').value.trim();
-      const caption = document.getElementById('caption').value.trim();
-      
-      if (!token || !chat_id || !photo_url) {
-        alert('請填寫 Token、頻道 ID 和照片連結');
-        return;
-      }
-      
-      // 收集按鈕數據
-      const buttons = [];
-      document.querySelectorAll('.button-item').forEach(item => {
-        const text = item.querySelector('.btn-text').value.trim();
-        const url = item.querySelector('.btn-url').value.trim();
-        
-        if (text && url) {
-          buttons.push({ text, url });
-        }
-      });
-      
-      // 構建鍵盤結構
-      let keyboard = [];
-      if (buttons.length > 0) {
-        // 每行一個按鈕（簡單實現）
-        buttons.forEach(btn => {
-          keyboard.push([btn]);
-        });
-      }
-      
-      // 構建參數
-      let params = new URLSearchParams({
-        chat_id: chat_id,
-        photo: photo_url
-      });
-      
-      if (caption) {
-        params.append('caption', caption);
-      }
-      
-      if (keyboard.length > 0) {
-        params.append('reply_markup', JSON.stringify({ inline_keyboard: keyboard }));
-      }
-      
-      // 生成完整URL
-      const url = `https://api.telegram.org/bot${encodeURIComponent(token)}/sendPhoto?${params.toString()}`;
-      
-      // 顯示結果
-      document.getElementById('result').innerHTML = url;
-    }
-    
-    function copyToClipboard() {
-      const resultText = document.getElementById('result').innerText;
-      navigator.clipboard.writeText(resultText)
-        .then(() => {
-          alert('鏈接已複製到剪貼板！');
-        })
-        .catch(err => {
-          console.error('複製失敗:', err);
-          alert('複製失敗，請手動選擇並複製鏈接');
-        });
-    }
-    
-    function resetForm() {
-      if (confirm('確定要重置所有內容嗎？')) {
-        document.getElementById('token').value = '';
-        document.getElementById('chat_id').value = '';
-        document.getElementById('photo_url').value = '';
-        document.getElementById('caption').value = '';
-        
-        const buttonsContainer = document.getElementById('buttons-container');
-        buttonsContainer.innerHTML = '';
-        btnCounter = 0;
-        
-        addButton();
-        addButton();
-        
-        document.getElementById('result').innerText = '填寫完畢後點擊上方按鈕生成鏈接';
-      }
-    }
-  </script>
+  <script src="cc.js"></script>
 </body>
 </html>
