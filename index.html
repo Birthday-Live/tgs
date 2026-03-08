@@ -3,147 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TG 接口链接生成器</title>
+    <title>TG 消息发送器 (支持超长 Base64)</title>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; padding: 20px; line-height: 1.6; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: #0088cc; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .section { margin-bottom: 20px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        textarea { height: 80px; resize: vertical; }
+        body { font-family: -apple-system, sans-serif; background: #f4f7f9; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        h2 { color: #0088cc; margin-top: 0; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; }
         
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 8px; }
-        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 6px; transition: 0.3s; font-weight: bold; }
+        /* 输入样式 */
+        .grid { display: flex; gap: 15px; margin-bottom: 20px; }
+        .field { flex: 1; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        textarea { height: 100px; resize: vertical; }
+
+        /* 模式选择 */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f0f0f0; padding: 5px; border-radius: 10px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s; }
         .tab.active { background: #0088cc; color: white; }
+
+        /* 上传区 */
+        .upload-zone { border: 2px dashed #0088cc; background: #f8fbff; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; margin-bottom: 10px; }
+        .upload-zone:hover { background: #eef6ff; }
+        #fileInput { display: none; }
+
+        /* 按钮与结果 */
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        .btn-primary { background: #0088cc; color: white; }
+        .btn-primary:hover { background: #0077b5; }
         
-        .result-box { background: #f8f9fa; border: 1px solid #e1e4e8; padding: 15px; border-radius: 8px; word-break: break-all; position: relative; }
-        .result-url { font-family: monospace; color: #d63384; font-size: 13px; }
-        
-        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
-        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-copy { background: #28a745; color: white; }
-        .btn-test { background: #0088cc; color: white; }
-        button:hover { opacity: 0.8; }
+        .response-area { margin-top: 25px; background: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 13px; min-height: 50px; overflow-x: auto; }
+        .status-dot { inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Telegram 消息链接构造器</h2>
+    <h2>Telegram 发送助手</h2>
 
-    <div class="section">
-        <div style="display: flex; gap: 10px;">
-            <div style="flex: 2;">
-                <label>机器人 TOKEN</label>
-                <input type="text" id="token" placeholder="例如: 123456:ABC-DEF..." oninput="generate()">
-            </div>
-            <div style="flex: 1;">
-                <label>频道 ID / @用户名</label>
-                <input type="text" id="chatId" placeholder="例如: @my_channel" oninput="generate()">
-            </div>
+    <div class="grid">
+        <div class="field">
+            <label>机器人 Token</label>
+            <input type="text" id="token" placeholder="123456:ABC-DEF...">
+        </div>
+        <div class="field">
+            <label>目标 Chat ID</label>
+            <input type="text" id="chatId" placeholder="@频道名 或 数字ID">
         </div>
     </div>
 
     <label>选择事例模式</label>
     <div class="tabs">
-        <div class="tab active" onclick="setMode('a', this)">A. 文字 + 图片链接</div>
-        <div class="tab" onclick="setMode('b', this)">B. 文字 + Base64图片</div>
-        <div class="tab" onclick="setMode('c', this)">C. 纯文字 (无图)</div>
+        <div class="tab active" onclick="switchMode('a', this)">A. 图片链接</div>
+        <div class="tab" onclick="switchMode('b', this)">B. 上传图片(Base64)</div>
+        <div class="tab" onclick="switchMode('c', this)">C. 纯文字</div>
     </div>
 
-    <div class="section" id="photoInput">
-        <label id="photoLabel">图片链接 / Base64 内容</label>
-        <textarea id="photoData" placeholder="请输入链接或Base64字符串" oninput="generate()">https://te.legra.ph/file/example.jpg</textarea>
-    </div>
-
-    <div class="section">
-        <label>文字内容 (Caption / Text)</label>
-        <textarea id="textContent" oninput="generate()">这是我的说明文字</textarea>
-    </div>
-
-    <hr>
-
-    <div class="section">
-        <label>生成的 API 链接：</label>
-        <div class="result-box">
-            <div id="resultUrl" class="result-url">请填写上方信息...</div>
+    <div id="imageInputArea">
+        <div id="uploadBox" style="display:none;">
+            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                📷 点击此处上传图片 (自动转 Base64)
+            </div>
+            <input type="file" id="fileInput" accept="image/*" onchange="processFile(this)">
         </div>
-        <div class="btn-group">
-            <button class="btn-copy" onclick="copyUrl()">复制链接</button>
-            <button class="btn-test" onclick="testUrl()">浏览器模拟发送</button>
+        <div class="field" style="margin-bottom:20px;">
+            <label id="dataLabel">图片数据 (URL 或 Base64)</label>
+            <textarea id="imageData" placeholder="请输入图片地址..."></textarea>
         </div>
+    </div>
+
+    <div class="field">
+        <label>消息文字内容 (支持 HTML)</label>
+        <textarea id="messageText">Hello! 这是一条测试消息。</textarea>
+    </div>
+
+    <div class="actions">
+        <button class="btn-primary" onclick="executeSend()">🚀 立即执行发送 (POST)</button>
+    </div>
+
+    <div class="response-area">
+        <div style="margin-bottom: 8px; color: #5c6370;">// API 返回结果</div>
+        <div id="apiResult">等待操作...</div>
     </div>
 </div>
 
 <script>
-    let currentMode = 'a';
-    const btnMarkup = JSON.stringify({
+    let mode = 'a';
+    const keyboard = {
         "inline_keyboard": [
             [{"text": "查看水喝千束規則", "url": "https://te.legra.ph/%E7%BE%A4%E8%A7%84-03-07-2"}],
             [{"text": "加入群組", "url": "https://tg.chat.chisato.org.cn/"}]
         ]
-    });
+    };
 
-    function setMode(mode, el) {
-        currentMode = mode;
-        // UI 切换
+    function switchMode(m, el) {
+        mode = m;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
         
-        // 逻辑切换
-        const photoSection = document.getElementById('photoInput');
-        const photoLabel = document.getElementById('photoLabel');
-        const photoData = document.getElementById('photoData');
+        const uploadBox = document.getElementById('uploadBox');
+        const imageInputArea = document.getElementById('imageInputArea');
+        const dataLabel = document.getElementById('dataLabel');
+
+        if (m === 'c') {
+            imageInputArea.style.display = 'none';
+        } else {
+            imageInputArea.style.display = 'block';
+            uploadBox.style.display = (m === 'b') ? 'block' : 'none';
+            dataLabel.innerText = (m === 'b') ? 'Base64 数据内容' : '图片 URL 链接';
+        }
+    }
+
+    function processFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('imageData').value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // --- 核心提交功能 ---
+    async function executeSend() {
+        const token = document.getElementById('token').value.trim();
+        const chatId = document.getElementById('chatId').value.trim();
+        const msgText = document.getElementById('messageText').value;
+        const imgData = document.getElementById('imageData').value;
+        const resultDiv = document.getElementById('apiResult');
+
+        if (!token || !chatId) {
+            alert("请填写 Token 和 Chat ID！");
+            return;
+        }
+
+        resultDiv.innerText = "发送请求中...";
+        
+        // 根据模式决定接口路径
+        const apiMethod = (mode === 'c') ? 'sendMessage' : 'sendPhoto';
+        const url = `https://api.telegram.org/bot${token}/${apiMethod}`;
+
+        // 构建请求体 (JSON 格式)
+        const payload = {
+            chat_id: chatId,
+            parse_mode: 'HTML',
+            reply_markup: keyboard
+        };
 
         if (mode === 'c') {
-            photoSection.style.display = 'none';
+            payload.text = msgText;
         } else {
-            photoSection.style.display = 'block';
-            photoLabel.innerText = mode === 'a' ? '图片链接' : 'Base64 字符串 (不带前缀)';
-            if(mode === 'b' && !photoData.value.startsWith('data')) {
-                photoData.placeholder = "不要带 data:image/jpeg;base64, 前缀";
+            payload.photo = imgData;
+            payload.caption = msgText;
+        }
+
+        try {
+            // 使用 POST 提交，彻底解决 URL 长度限制
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            resultDiv.innerText = JSON.stringify(data, null, 2);
+            
+            if (data.ok) {
+                resultDiv.style.color = "#98c379"; // 成功绿色
+            } else {
+                resultDiv.style.color = "#e06c75"; // 失败红色
             }
+        } catch (err) {
+            resultDiv.style.color = "#e06c75";
+            resultDiv.innerText = "网络错误: " + err.message;
         }
-        generate();
     }
-
-    function generate() {
-        const token = document.getElementById('token').value || '你的TOKEN';
-        const chatId = encodeURIComponent(document.getElementById('chatId').value || '你的频道ID');
-        const text = encodeURIComponent(document.getElementById('textContent').value);
-        const photo = encodeURIComponent(document.getElementById('photoData').value);
-        const markup = encodeURIComponent(btnMarkup);
-
-        let baseUrl = `https://api.telegram.org/bot${token}/`;
-        let finalUrl = "";
-
-        if (currentMode === 'a') {
-            finalUrl = `${baseUrl}sendPhoto?chat_id=${chatId}&photo=${photo}&caption=${text}&parse_mode=HTML&reply_markup=${markup}`;
-        } else if (currentMode === 'b') {
-            // 自动处理 Base64 的前缀补全
-            const base64Raw = document.getElementById('photoData').value;
-            const fullBase64 = base64Raw.startsWith('data:') ? base64Raw : `data:image/jpeg;base64,${base64Raw}`;
-            finalUrl = `${baseUrl}sendPhoto?chat_id=${chatId}&photo=${encodeURIComponent(fullBase64)}&caption=${text}&parse_mode=HTML&reply_markup=${markup}`;
-        } else {
-            finalUrl = `${baseUrl}sendMessage?chat_id=${chatId}&text=${text}&parse_mode=HTML&reply_markup=${markup}`;
-        }
-
-        document.getElementById('resultUrl').innerText = finalUrl;
-    }
-
-    function copyUrl() {
-        const text = document.getElementById('resultUrl').innerText;
-        navigator.clipboard.writeText(text).then(() => alert('已复制到剪贴板'));
-    }
-
-    function testUrl() {
-        const text = document.getElementById('resultUrl').innerText;
-        window.open(text, '_blank');
-    }
-
-    // 初始化执行一次
-    generate();
 </script>
 
 </body>
