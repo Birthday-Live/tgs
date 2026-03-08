@@ -1,22 +1,16 @@
 /**
- * Telegram 消息助手核心逻辑库
+ * Telegram 消息助手逻辑控制
  * 文件名: cc.js
- * 功能：支持图片链接、本地Base64转文件流上传、自定义内联按钮
  */
 
-// 当前发送模式：a (链接), b (本地), c (文字)
 let currentMode = 'a';
 
-/**
- * 切换发送模式 UI 交互
- */
+// 模式切换
 function setMode(m, el) {
     currentMode = m;
-    // 切换 Tab 样式
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     
-    // 切换输入框显示状态
     const uploadBox = document.getElementById('uploadBox');
     const imageGroup = document.getElementById('imageGroup');
     const dataLabel = document.getElementById('dataLabel');
@@ -30,10 +24,94 @@ function setMode(m, el) {
     }
 }
 
-/**
- * 处理本地文件读取并转为 Base64 预览
- */
+// 图片转 Base64 处理
 function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('imageData').value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// 获取按钮配置
+function getKeyboard() {
+    return {
+        "inline_keyboard": [
+            [{"text": document.getElementById('btn1Text').value, "url": document.getElementById('btn1Url').value}],
+            [{"text": document.getElementById('btn2Text').value, "url": document.getElementById('btn2Url').value}]
+        ]
+    };
+}
+
+/**
+ * 关键函数：将 Base64 字符串转换为二进制文件 (Blob)
+ */
+function base64ToBlob(base64) {
+    const parts = base64.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
+// 执行发送
+async function startSend() {
+    const token = document.getElementById('token').value.trim();
+    const chatId = document.getElementById('chatId').value.trim();
+    const text = document.getElementById('textContent').value;
+    const photoValue = document.getElementById('imageData').value.trim();
+    const out = document.getElementById('apiOutput');
+
+    if (!token || !chatId) return alert("请填写 Token 和 Chat ID");
+
+    out.innerText = "🚀 正在执行发送 (二进制流模式)...";
+    out.style.color = "#abb2bf";
+
+    const apiMethod = (currentMode === 'c') ? 'sendMessage' : 'sendPhoto';
+    const apiUrl = `https://api.telegram.org/bot${token}/${apiMethod}`;
+    const keyboard = getKeyboard();
+
+    try {
+        // 使用 FormData 模拟真实表单上传，这能处理极大长度的数据
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+        formData.append('parse_mode', 'HTML');
+        formData.append('reply_markup', JSON.stringify(keyboard));
+
+        if (currentMode === 'c') {
+            formData.append('text', text);
+        } else {
+            // 如果是 B 模式且是 Base64 数据，转成 Blob 文件对象
+            if (currentMode === 'b' && photoValue.startsWith('data:')) {
+                const blob = base64ToBlob(photoValue);
+                formData.append('photo', blob, "image.jpg"); 
+            } else {
+                // A 模式或普通字符串直接添加
+                formData.append('photo', photoValue);
+            }
+            formData.append('caption', text);
+        }
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            body: formData // 注意：不需要设置 Content-Type，浏览器会自动处理
+        });
+
+        const result = await response.json();
+        out.innerText = JSON.stringify(result, null, 2);
+        out.style.color = result.ok ? "#98c379" : "#e06c75";
+
+    } catch (err) {
+        out.innerText = "❌ 网络错误: " + err.message + "\n可能是跨域拦截或代理未生效。";
+        out.style.color = "#e06c75";
+    }
+}
     const file = input.files[0];
     if (!file) return;
     
