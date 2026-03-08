@@ -2,26 +2,30 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TG 消息发送助手</title>
     <style>
         :root { --tg-color: #0088cc; --bg-color: #f0f2f5; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg-color); padding: 20px; line-height: 1.6; color: #333; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg-color); padding: 20px; color: #333; }
         .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h2 { color: var(--tg-color); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 15px; text-align: center; }
+        h2 { color: var(--tg-color); text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }
         .grid { display: flex; gap: 15px; margin-bottom: 15px; }
         .field { flex: 1; }
-        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 14px; color: #555; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        textarea { height: 100px; resize: vertical; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 14px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        textarea { height: 80px; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 10px; }
-        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; }
         .tab.active { background: var(--tg-color); color: white; }
-        .upload-zone { border: 2px dashed var(--tg-color); background: #f8fbff; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; margin-bottom: 10px; }
+        .upload-zone { border: 2px dashed var(--tg-color); background: #f8fbff; padding: 15px; text-align: center; border-radius: 10px; cursor: pointer; margin-bottom: 15px; }
         #fileInput { display: none; }
-        .btn-send { width: 100%; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 18px; background: var(--tg-color); color: white; transition: 0.3s; }
+        
+        /* 按钮配置区样式 */
+        .btn-config { background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 20px; }
+        .btn-config h4 { margin: 0 0 10px 0; color: #666; font-size: 14px; }
+
+        .btn-send { width: 100%; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 18px; background: var(--tg-color); color: white; }
         .btn-send:hover { background: #0077b5; }
-        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; font-size: 13px; overflow-x: auto; min-height: 40px; white-space: pre-wrap; word-break: break-all; margin-top: 10px; }
+        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; margin-top: 10px; white-space: pre-wrap; word-break: break-all; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -30,43 +34,44 @@
     <h2>Telegram 消息助手</h2>
 
     <div class="grid">
-        <div class="field">
-            <label>机器人 Token</label>
-            <input type="text" id="token" placeholder="123456:ABC...">
-        </div>
-        <div class="field">
-            <label>目标 Chat ID</label>
-            <input type="text" id="chatId" placeholder="@channel_name">
-        </div>
+        <div class="field"><label>Bot Token</label><input type="text" id="token" placeholder="123456:ABC..."></div>
+        <div class="field"><label>Chat ID</label><input type="text" id="chatId" placeholder="@your_channel"></div>
     </div>
 
     <div class="tabs">
         <div class="tab active" onclick="setMode('a', this)">A. 图片链接</div>
-        <div class="tab" onclick="setMode('b', this)">B. 本地上传 (Base64)</div>
+        <div class="tab" onclick="setMode('b', this)">B. 本地上传</div>
         <div class="tab" onclick="setMode('c', this)">C. 纯文字</div>
     </div>
 
     <div id="imageGroup">
         <div id="uploadBox" style="display:none;">
-            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-                <b>📁 点击选择图片</b>
-            </div>
+            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">📁 点击上传图片</div>
             <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this)">
         </div>
         <div class="field" style="margin-bottom: 15px;">
-            <label id="dataLabel">图片 URL 链接</label>
-            <textarea id="imageData" placeholder="https://..."></textarea>
+            <label id="dataLabel">图片 URL</label>
+            <textarea id="imageData"></textarea>
         </div>
     </div>
 
-    <div class="field">
-        <label>说明文字 (HTML 模式)</label>
-        <textarea id="textContent">测试消息内容</textarea>
+    <div class="field"><label>消息内容</label><textarea id="textContent">测试消息内容</textarea></div>
+
+    <div class="btn-config">
+        <h4>下方内联按钮配置 (Inline Keyboard)</h4>
+        <div class="grid">
+            <div class="field"><input type="text" id="btn1Text" value="查看水喝千束規則"></div>
+            <div class="field"><input type="text" id="btn1Url" value="https://te.legra.ph/%E7%BE%A4%E8%A7%84-03-07-2"></div>
+        </div>
+        <div class="grid" style="margin-top:10px;">
+            <div class="field"><input type="text" id="btn2Text" value="加入群組"></div>
+            <div class="field"><input type="text" id="btn2Url" value="https://tg.chat.chisato.org.cn/"></div>
+        </div>
     </div>
 
     <button class="btn-send" onclick="startSend()">🚀 立即执行发送</button>
 
-    <div style="font-size: 12px; font-weight: bold; color: #888; margin-top: 20px;">API 执行反馈</div>
+    <div style="margin-top: 20px; font-weight: bold; color: #888;">回执结果:</div>
     <pre id="apiOutput">等待指令...</pre>
 </div>
 
