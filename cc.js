@@ -1,32 +1,81 @@
 let btnCounter = 0;
-let currentType = 'photo-url';
+let currentTab = 'photo';
 
 // 页面加载完成后初始化
 window.onload = function() {
-  // 设置消息类型选择事件
-  document.querySelectorAll('.type-option').forEach(option => {
-    option.addEventListener('click', function() {
-      // 更新活动状态
-      document.querySelectorAll('.type-option').forEach(el => {
-        el.classList.remove('active');
-      });
-      this.classList.add('active');
-      
-      // 显示对应的表单
-      const type = this.getAttribute('data-type');
-      currentType = type;
-      
-      document.querySelectorAll('.form-section').forEach(section => {
-        section.classList.remove('active');
-      });
-      document.getElementById(`${type}-form`).classList.add('active');
-    });
-  });
-  
-  // 添加默认按钮
   addButton();
   addButton();
+  togglePhotoInput(); // 初始化显示正确的输入框
 };
+
+// 切换标签页
+function switchTab(tabName) {
+  currentTab = tabName;
+  
+  // 更新标签样式
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+  
+  // 更新内容显示
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
+// 切换图片输入方式
+function togglePhotoInput() {
+  const source = document.getElementById('photo_source').value;
+  
+  document.getElementById('photo_url_group').style.display = 'none';
+  document.getElementById('photo_base64_group').style.display = 'none';
+  document.getElementById('photo_upload_group').style.display = 'none';
+  
+  if (source === 'url') {
+    document.getElementById('photo_url_group').style.display = 'block';
+  } else if (source === 'base64') {
+    document.getElementById('photo_base64_group').style.display = 'block';
+  } else if (source === 'upload') {
+    document.getElementById('photo_upload_group').style.display = 'block';
+  }
+}
+
+// 处理文件上传并自动转为Base64
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // 检查文件类型和大小
+  if (!file.type.match('image.*')) {
+    alert('请选择图片文件 (JPG, PNG, GIF)');
+    return;
+  }
+  
+  if (file.size > 10 * 1024 * 1024) {
+    alert('文件大小不能超过 10MB');
+    return;
+  }
+  
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    // 显示预览
+    const preview = document.getElementById('image-preview');
+    preview.src = e.target.result;
+    document.getElementById('preview-container').style.display = 'block';
+    
+    // 自动填充Base64输入框
+    document.getElementById('photo_base64').value = e.target.result;
+    
+    // 自动切换到Base64模式
+    document.getElementById('photo_source').value = 'base64';
+    togglePhotoInput();
+  };
+  
+  reader.readAsDataURL(file);
+}
 
 // 添加按钮
 function addButton() {
@@ -70,14 +119,29 @@ function removeButton(button) {
 function generate() {
   let token, chat_id, message_data;
   
-  if (currentType === 'photo-url') {
+  if (currentTab === 'photo') {
     token = document.getElementById('token').value.trim();
     chat_id = document.getElementById('chat_id').value.trim();
-    const photo_url = document.getElementById('photo_url').value.trim();
+    
+    const photo_source = document.getElementById('photo_source').value;
+    let photo_data;
+    
+    if (photo_source === 'url') {
+      photo_data = document.getElementById('photo_url').value.trim();
+    } else if (photo_source === 'base64' || photo_source === 'upload') {
+      photo_data = document.getElementById('photo_base64').value.trim();
+      
+      // 确保Base64数据包含前缀
+      if (photo_data && !photo_data.startsWith('data:image/')) {
+        alert('Base64数据必须包含完整前缀（如 data:image/jpeg;base64,）');
+        return;
+      }
+    }
+    
     const caption = document.getElementById('caption').value.trim();
     
-    if (!token || !chat_id || !photo_url) {
-      alert('请填写 Token、频道 ID 和图片链接');
+    if (!token || !chat_id || !photo_data) {
+      alert('请填写 Token、频道 ID 和图片数据');
       return;
     }
     
@@ -85,42 +149,15 @@ function generate() {
       method: 'sendPhoto',
       params: {
         chat_id: chat_id,
-        photo: photo_url,
+        photo: photo_data,
         ...(caption && { caption: caption }),
         parse_mode: 'HTML'
       }
     };
     
-  } else if (currentType === 'photo-base64') {
-    token = document.getElementById('base64-token').value.trim();
-    chat_id = document.getElementById('base64-chat_id').value.trim();
-    const photo_base64 = document.getElementById('photo_base64').value.trim();
-    const caption = document.getElementById('base64-caption').value.trim();
-    
-    if (!token || !chat_id || !photo_base64) {
-      alert('请填写 Token、频道 ID 和 Base64 图片数据');
-      return;
-    }
-    
-    // 确保Base64数据包含前缀
-    if (!photo_base64.startsWith('data:image/')) {
-      alert('Base64数据必须包含完整前缀（如 data:image/jpeg;base64,）');
-      return;
-    }
-    
-    message_data = {
-      method: 'sendPhoto',
-      params: {
-        chat_id: chat_id,
-        photo: photo_base64,
-        ...(caption && { caption: caption }),
-        parse_mode: 'HTML'
-      }
-    };
-    
-  } else { // text-only
-    token = document.getElementById('text-token').value.trim();
-    chat_id = document.getElementById('text-chat_id').value.trim();
+  } else {
+    token = document.getElementById('text_token').value.trim();
+    chat_id = document.getElementById('text_chat_id').value.trim();
     const message_text = document.getElementById('message_text').value.trim();
     
     if (!token || !chat_id || !message_text) {
@@ -192,43 +229,30 @@ function copyToClipboard() {
 // 重置表单
 function resetForm() {
   if (confirm('确定要重置所有内容吗？')) {
-    if (currentType === 'photo-url') {
+    if (currentTab === 'photo') {
       document.getElementById('token').value = '';
       document.getElementById('chat_id').value = '';
       document.getElementById('photo_url').value = '';
-      document.getElementById('caption').value = '';
-    } else if (currentType === 'photo-base64') {
-      document.getElementById('base64-token').value = '';
-      document.getElementById('base64-chat_id').value = '';
       document.getElementById('photo_base64').value = '';
-      document.getElementById('base64-caption').value = '';
-    } else { // text-only
-      document.getElementById('text-token').value = '';
-      document.getElementById('text-chat_id').value = '';
+      document.getElementById('caption').value = '';
+      document.getElementById('photo_file').value = '';
+      document.getElementById('photo_source').value = 'url';
+      document.getElementById('preview-container').style.display = 'none';
+      togglePhotoInput();
+    } else {
+      document.getElementById('text_token').value = '';
+      document.getElementById('text_chat_id').value = '';
       document.getElementById('message_text').value = '';
     }
     
     const buttonsContainer = document.getElementById('buttons-container');
-    buttonsContainer.innerHTML = '';
-    btnCounter = 0;
-    
-    addButton();
-    addButton();
-    
-    document.getElementById('result').innerText = '填写完毕后点击上方按钮生成链接';
-  }
-  /* 保持之前的CSS不变，只添加预览相关样式 */
-#preview-container {
-  margin-top: 15px;
-  display: none;
-  text-align: center;
-}
+buttonsContainer.innerHTML = '';
+btnCounter = 0;
 
-#image-preview {
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+addButton();
+addButton();
 
-}
+document.getElementById('result').innerText = '填寫完畢後點擊上方按鈕生成鏈接';
+
+    
+  
