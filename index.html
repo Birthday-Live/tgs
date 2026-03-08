@@ -3,182 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TG 消息发送器 (支持超长 Base64)</title>
+    <title>TG 消息发送助手</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f4f7f9; padding: 20px; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        h2 { color: #0088cc; margin-top: 0; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; }
-        
-        /* 输入样式 */
-        .grid { display: flex; gap: 15px; margin-bottom: 20px; }
+        :root { --tg-color: #0088cc; --bg-color: #f0f2f5; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg-color); padding: 20px; line-height: 1.6; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { color: var(--tg-color); margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 15px; text-align: center; }
+        .grid { display: flex; gap: 15px; margin-bottom: 15px; }
         .field { flex: 1; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 14px; color: #555; }
         input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         textarea { height: 100px; resize: vertical; }
-
-        /* 模式选择 */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f0f0f0; padding: 5px; border-radius: 10px; }
-        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        .tab.active { background: #0088cc; color: white; }
-
-        /* 上传区 */
-        .upload-zone { border: 2px dashed #0088cc; background: #f8fbff; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; margin-bottom: 10px; }
-        .upload-zone:hover { background: #eef6ff; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 10px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .tab.active { background: var(--tg-color); color: white; }
+        .upload-zone { border: 2px dashed var(--tg-color); background: #f8fbff; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; margin-bottom: 10px; }
         #fileInput { display: none; }
-
-        /* 按钮与结果 */
-        .actions { display: flex; gap: 10px; margin-top: 20px; }
-        button { flex: 1; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
-        .btn-primary { background: #0088cc; color: white; }
-        .btn-primary:hover { background: #0077b5; }
-        
-        .response-area { margin-top: 25px; background: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 13px; min-height: 50px; overflow-x: auto; }
-        .status-dot { inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .btn-send { width: 100%; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 18px; background: var(--tg-color); color: white; transition: 0.3s; }
+        .btn-send:hover { background: #0077b5; }
+        pre { background: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; font-size: 13px; overflow-x: auto; min-height: 40px; white-space: pre-wrap; word-break: break-all; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Telegram 发送助手</h2>
+    <h2>Telegram 消息助手</h2>
 
     <div class="grid">
         <div class="field">
             <label>机器人 Token</label>
-            <input type="text" id="token" placeholder="123456:ABC-DEF...">
+            <input type="text" id="token" placeholder="123456:ABC...">
         </div>
         <div class="field">
             <label>目标 Chat ID</label>
-            <input type="text" id="chatId" placeholder="@频道名 或 数字ID">
+            <input type="text" id="chatId" placeholder="@channel_name">
         </div>
     </div>
 
-    <label>选择事例模式</label>
     <div class="tabs">
-        <div class="tab active" onclick="switchMode('a', this)">A. 图片链接</div>
-        <div class="tab" onclick="switchMode('b', this)">B. 上传图片(Base64)</div>
-        <div class="tab" onclick="switchMode('c', this)">C. 纯文字</div>
+        <div class="tab active" onclick="setMode('a', this)">A. 图片链接</div>
+        <div class="tab" onclick="setMode('b', this)">B. 本地上传 (Base64)</div>
+        <div class="tab" onclick="setMode('c', this)">C. 纯文字</div>
     </div>
 
-    <div id="imageInputArea">
+    <div id="imageGroup">
         <div id="uploadBox" style="display:none;">
             <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-                📷 点击此处上传图片 (自动转 Base64)
+                <b>📁 点击选择图片</b>
             </div>
-            <input type="file" id="fileInput" accept="image/*" onchange="processFile(this)">
+            <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this)">
         </div>
-        <div class="field" style="margin-bottom:20px;">
-            <label id="dataLabel">图片数据 (URL 或 Base64)</label>
-            <textarea id="imageData" placeholder="请输入图片地址..."></textarea>
+        <div class="field" style="margin-bottom: 15px;">
+            <label id="dataLabel">图片 URL 链接</label>
+            <textarea id="imageData" placeholder="https://..."></textarea>
         </div>
     </div>
 
     <div class="field">
-        <label>消息文字内容 (支持 HTML)</label>
-        <textarea id="messageText">Hello! 这是一条测试消息。</textarea>
+        <label>说明文字 (HTML 模式)</label>
+        <textarea id="textContent">测试消息内容</textarea>
     </div>
 
-    <div class="actions">
-        <button class="btn-primary" onclick="executeSend()">🚀 立即执行发送 (POST)</button>
-    </div>
+    <button class="btn-send" onclick="startSend()">🚀 立即执行发送</button>
 
-    <div class="response-area">
-        <div style="margin-bottom: 8px; color: #5c6370;">// API 返回结果</div>
-        <div id="apiResult">等待操作...</div>
-    </div>
+    <div style="font-size: 12px; font-weight: bold; color: #888; margin-top: 20px;">API 执行反馈</div>
+    <pre id="apiOutput">等待指令...</pre>
 </div>
 
-<script>
-    let mode = 'a';
-    const keyboard = {
-        "inline_keyboard": [
-            [{"text": "查看水喝千束規則", "url": "https://te.legra.ph/%E7%BE%A4%E8%A7%84-03-07-2"}],
-            [{"text": "加入群組", "url": "https://tg.chat.chisato.org.cn/"}]
-        ]
-    };
-
-    function switchMode(m, el) {
-        mode = m;
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
-        
-        const uploadBox = document.getElementById('uploadBox');
-        const imageInputArea = document.getElementById('imageInputArea');
-        const dataLabel = document.getElementById('dataLabel');
-
-        if (m === 'c') {
-            imageInputArea.style.display = 'none';
-        } else {
-            imageInputArea.style.display = 'block';
-            uploadBox.style.display = (m === 'b') ? 'block' : 'none';
-            dataLabel.innerText = (m === 'b') ? 'Base64 数据内容' : '图片 URL 链接';
-        }
-    }
-
-    function processFile(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('imageData').value = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // --- 核心提交功能 ---
-    async function executeSend() {
-        const token = document.getElementById('token').value.trim();
-        const chatId = document.getElementById('chatId').value.trim();
-        const msgText = document.getElementById('messageText').value;
-        const imgData = document.getElementById('imageData').value;
-        const resultDiv = document.getElementById('apiResult');
-
-        if (!token || !chatId) {
-            alert("请填写 Token 和 Chat ID！");
-            return;
-        }
-
-        resultDiv.innerText = "发送请求中...";
-        
-        // 根据模式决定接口路径
-        const apiMethod = (mode === 'c') ? 'sendMessage' : 'sendPhoto';
-        const url = `https://api.telegram.org/bot${token}/${apiMethod}`;
-
-        // 构建请求体 (JSON 格式)
-        const payload = {
-            chat_id: chatId,
-            parse_mode: 'HTML',
-            reply_markup: keyboard
-        };
-
-        if (mode === 'c') {
-            payload.text = msgText;
-        } else {
-            payload.photo = imgData;
-            payload.caption = msgText;
-        }
-
-        try {
-            // 使用 POST 提交，彻底解决 URL 长度限制
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-            resultDiv.innerText = JSON.stringify(data, null, 2);
-            
-            if (data.ok) {
-                resultDiv.style.color = "#98c379"; // 成功绿色
-            } else {
-                resultDiv.style.color = "#e06c75"; // 失败红色
-            }
-        } catch (err) {
-            resultDiv.style.color = "#e06c75";
-            resultDiv.innerText = "网络错误: " + err.message;
-        }
-    }
-</script>
-
+<script src="cc.js"></script>
 </body>
 </html>
