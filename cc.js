@@ -1,258 +1,119 @@
-let btnCounter = 0;
-let currentTab = 'photo';
+/**
+ * Telegram 消息发送核心逻辑
+ * 文件名: cc.js
+ */
 
-// 页面加载完成后初始化
-window.onload = function() {
-  addButton();
-  addButton();
-  togglePhotoInput(); // 初始化显示正确的输入框
+let currentMode = 'a';
+const keyboard = {
+    "inline_keyboard": [
+        [{"text": "查看水喝千束規則", "url": "https://te.legra.ph/%E7%BE%A4%E8%A7%84-03-07-2"}],
+        [{"text": "加入群組", "url": "https://tg.chat.chisato.org.cn/"}]
+    ]
 };
 
-// 切换标签页
-function switchTab(tabName) {
-  currentTab = tabName;
-  
-  // 更新标签样式
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.classList.remove('active');
-  });
-  document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
-  
-  // 更新内容显示
-  document.querySelectorAll('.tab-content').forEach(content => {
-    content.classList.remove('active');
-  });
-  document.getElementById(`${tabName}-tab`).classList.add('active');
-}
+// 切换 A/B/C 模式
+function setMode(m, el) {
+    currentMode = m;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    
+    const uploadBox = document.getElementById('uploadBox');
+    const imageGroup = document.getElementById('imageGroup');
+    const dataLabel = document.getElementById('dataLabel');
 
-// 切换图片输入方式
-function togglePhotoInput() {
-  const source = document.getElementById('photo_source').value;
-  
-  document.getElementById('photo_url_group').style.display = 'none';
-  document.getElementById('photo_base64_group').style.display = 'none';
-  document.getElementById('photo_upload_group').style.display = 'none';
-  
-  if (source === 'url') {
-    document.getElementById('photo_url_group').style.display = 'block';
-  } else if (source === 'base64') {
-    document.getElementById('photo_base64_group').style.display = 'block';
-  } else if (source === 'upload') {
-    document.getElementById('photo_upload_group').style.display = 'block';
-  }
-}
-
-// 处理文件上传并自动转为Base64
-function handleFileUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  // 检查文件类型和大小
-  if (!file.type.match('image.*')) {
-    alert('请选择图片文件 (JPG, PNG, GIF)');
-    return;
-  }
-  
-  if (file.size > 10 * 1024 * 1024) {
-    alert('文件大小不能超过 10MB');
-    return;
-  }
-  
-  const reader = new FileReader();
-  
-  reader.onload = function(e) {
-    // 显示预览
-    const preview = document.getElementById('image-preview');
-    preview.src = e.target.result;
-    document.getElementById('preview-container').style.display = 'block';
-    
-    // 自动填充Base64输入框
-    document.getElementById('photo_base64').value = e.target.result;
-    
-    // 自动切换到Base64模式
-    document.getElementById('photo_source').value = 'base64';
-    togglePhotoInput();
-  };
-  
-  reader.readAsDataURL(file);
-}
-
-// 添加按钮
-function addButton() {
-  btnCounter++;
-  const container = document.getElementById('buttons-container');
-  
-  const buttonDiv = document.createElement('div');
-  buttonDiv.className = 'button-item';
-  buttonDiv.innerHTML = `
-    <button class="delete-btn" onclick="removeButton(this)">×</button>
-    <div class="group">
-      <label>按钮 ${btnCounter} 文字</label>
-      <input type="text" class="btn-text" placeholder="按钮显示文字">
-    </div>
-    <div class="group">
-      <label>按钮 ${btnCounter} 链接</label>
-      <input type="url" class="btn-url" placeholder="https://example.com">
-    </div>
-  `;
-  
-  container.appendChild(buttonDiv);
-}
-
-// 删除按钮
-function removeButton(button) {
-  const buttonItem = button.parentElement;
-  buttonItem.remove();
-  
-  // 更新剩余按钮的编号
-  const buttons = document.querySelectorAll('.button-item');
-  buttons.forEach((btn, index) => {
-    const labels = btn.querySelectorAll('label');
-    labels[0].textContent = `按钮 ${index + 1} 文字`;
-    labels[1].textContent = `按钮 ${index + 1} 链接`;
-  });
-  
-  btnCounter = buttons.length;
-}
-
-// 生成链接
-function generate() {
-  let token, chat_id, message_data;
-  
-  if (currentTab === 'photo') {
-    token = document.getElementById('token').value.trim();
-    chat_id = document.getElementById('chat_id').value.trim();
-    
-    const photo_source = document.getElementById('photo_source').value;
-    let photo_data;
-    
-    if (photo_source === 'url') {
-      photo_data = document.getElementById('photo_url').value.trim();
-    } else if (photo_source === 'base64' || photo_source === 'upload') {
-      photo_data = document.getElementById('photo_base64').value.trim();
-      
-      // 确保Base64数据包含前缀
-      if (photo_data && !photo_data.startsWith('data:image/')) {
-        alert('Base64数据必须包含完整前缀（如 data:image/jpeg;base64,）');
-        return;
-      }
-    }
-    
-    const caption = document.getElementById('caption').value.trim();
-    
-    if (!token || !chat_id || !photo_data) {
-      alert('请填写 Token、频道 ID 和图片数据');
-      return;
-    }
-    
-    message_data = {
-      method: 'sendPhoto',
-      params: {
-        chat_id: chat_id,
-        photo: photo_data,
-        ...(caption && { caption: caption }),
-        parse_mode: 'HTML'
-      }
-    };
-    
-  } else {
-    token = document.getElementById('text_token').value.trim();
-    chat_id = document.getElementById('text_chat_id').value.trim();
-    const message_text = document.getElementById('message_text').value.trim();
-    
-    if (!token || !chat_id || !message_text) {
-      alert('请填写 Token、频道 ID 和消息内容');
-      return;
-    }
-    
-    message_data = {
-      method: 'sendMessage',
-      params: {
-        chat_id: chat_id,
-        text: message_text,
-        parse_mode: 'HTML'
-      }
-    };
-  }
-  
-  // 收集按钮数据
-  const buttons = [];
-  document.querySelectorAll('.button-item').forEach(item => {
-    const text = item.querySelector('.btn-text').value.trim();
-    const url = item.querySelector('.btn-url').value.trim();
-    
-    if (text && url) {
-      buttons.push({ text, url });
-    }
-  });
-  
-  // 构建键盘结构
-  if (buttons.length > 0) {
-    const keyboard = [];
-    buttons.forEach(btn => {
-      keyboard.push([btn]);
-    });
-    
-    message_data.params.reply_markup = JSON.stringify({ inline_keyboard: keyboard });
-  }
-  
-  // 生成完整URL
-  const baseUrl = `https://api.telegram.org/bot${encodeURIComponent(token)}/${message_data.method}`;
-  const params = new URLSearchParams();
-  
-  // 添加参数
-  for (const key in message_data.params) {
-    if (message_data.params.hasOwnProperty(key)) {
-      params.append(key, message_data.params[key]);
-    }
-  }
-  
-  const url = `${baseUrl}?${params.toString()}`;
-  
-  // 显示结果
-  document.getElementById('result').innerHTML = url;
-}
-
-// 复制到剪贴板
-function copyToClipboard() {
-  const resultText = document.getElementById('result').innerText;
-  navigator.clipboard.writeText(resultText)
-    .then(() => {
-      alert('链接已复制到剪贴板！');
-    })
-    .catch(err => {
-      console.error('复制失败:', err);
-      alert('复制失败，请手动选择并复制链接');
-    });
-}
-
-// 重置表单
-function resetForm() {
-  if (confirm('确定要重置所有内容吗？')) {
-    if (currentTab === 'photo') {
-      document.getElementById('token').value = '';
-      document.getElementById('chat_id').value = '';
-      document.getElementById('photo_url').value = '';
-      document.getElementById('photo_base64').value = '';
-      document.getElementById('caption').value = '';
-      document.getElementById('photo_file').value = '';
-      document.getElementById('photo_source').value = 'url';
-      document.getElementById('preview-container').style.display = 'none';
-      togglePhotoInput();
+    if (m === 'c') {
+        imageGroup.style.display = 'none';
     } else {
-      document.getElementById('text_token').value = '';
-      document.getElementById('text_chat_id').value = '';
-      document.getElementById('message_text').value = '';
+        imageGroup.style.display = 'block';
+        uploadBox.style.display = (m === 'b') ? 'block' : 'none';
+        dataLabel.innerText = (m === 'b') ? '图片 Base64 数据' : '图片 URL 链接';
     }
+}
+
+// 处理本地图片转 Base64
+function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('imageData').value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// 执行发送逻辑
+async function startSend() {
+    const token = document.getElementById('token').value.trim();
+    const chatId = document.getElementById('chatId').value.trim();
+    const text = document.getElementById('textContent').value;
+    const photo = document.getElementById('imageData').value;
+    const out = document.getElementById('apiOutput');
+
+    if (!token || !chatId) return alert("请填写 Token 和 Chat ID");
+
+    out.innerText = "正在尝试发送 (Fetch)...";
+    out.style.color = "#abb2bf";
+
+    const apiMethod = (currentMode === 'c') ? 'sendMessage' : 'sendPhoto';
+    const apiUrl = `https://api.telegram.org/bot${token}/${apiMethod}`;
+
+    try {
+        const payload = {
+            chat_id: chatId,
+            parse_mode: 'HTML',
+            reply_markup: keyboard
+        };
+        if (currentMode === 'c') { payload.text = text; } 
+        else { payload.photo = photo; payload.caption = text; }
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        out.innerText = JSON.stringify(result, null, 2);
+        out.style.color = result.ok ? "#98c379" : "#e06c75";
+
+    } catch (err) {
+        // 如果 Fetch 报错 (例如 Failed to fetch)，自动降级到 Form 提交
+        out.innerText = "Fetch 失败，正在尝试强制模式 (Form Submit)...";
+        out.style.color = "#d19a66";
+        
+        setTimeout(() => {
+            fallbackFormSend(apiUrl, chatId, text, photo);
+        }, 1000);
+    }
+}
+
+// 强制模式：通过隐藏表单提交（解决跨域和超长 Base64 问题）
+function fallbackFormSend(url, chatId, text, photo) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    form.target = '_blank';
+
+    const fields = {
+        chat_id: chatId,
+        parse_mode: 'HTML',
+        reply_markup: JSON.stringify(keyboard)
+    };
+
+    if (currentMode === 'c') { fields.text = text; } 
+    else { fields.photo = photo; fields.caption = text; }
+
+    for (const key in fields) {
+        const input = document.createElement('textarea');
+        input.name = key;
+        input.value = fields[key];
+        input.style.display = 'none';
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
     
-    const buttonsContainer = document.getElementById('buttons-container');
-buttonsContainer.innerHTML = '';
-btnCounter = 0;
-
-addButton();
-addButton();
-
-document.getElementById('result').innerText = '填寫完畢後點擊上方按鈕生成鏈接';
-
-    
-  
+    document.getElementById('apiOutput').innerText += "\n\n[强制模式] 已弹出新窗口发送，请查看窗口回执。";
+}
