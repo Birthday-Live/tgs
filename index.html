@@ -1,140 +1,150 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telegram 消息发送工具</title>
-  <link rel="stylesheet" href="c.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TG 接口链接生成器</title>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; background: #f0f2f5; padding: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #0088cc; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .section { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        textarea { height: 80px; resize: vertical; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #eee; padding: 5px; border-radius: 8px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 6px; transition: 0.3s; font-weight: bold; }
+        .tab.active { background: #0088cc; color: white; }
+        
+        .result-box { background: #f8f9fa; border: 1px solid #e1e4e8; padding: 15px; border-radius: 8px; word-break: break-all; position: relative; }
+        .result-url { font-family: monospace; color: #d63384; font-size: 13px; }
+        
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-copy { background: #28a745; color: white; }
+        .btn-test { background: #0088cc; color: white; }
+        button:hover { opacity: 0.8; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Telegram 消息发送工具</h1>
-      <p class="subtitle">支持图片上传、Base64编码和纯文字消息</p>
-    </header>
-    
-    <div class="content">
-      <div class="tabs">
-        <div class="tab active" onclick="switchTab('photo')">
-          <i class="fas fa-image"></i> 发送图片
-        </div>
-        <div class="tab" onclick="switchTab('text')">
-          <i class="fas fa-font"></i> 发送文字
-        </div>
-      </div>
-      
-      <div id="photo-tab" class="tab-content active">
-        <div class="group">
-          <label for="token">Bot Token</label>
-          <input type="text" id="token" placeholder="输入您的 Bot Token">
-        </div>
-        
-        <div class="group">
-          <label for="chat_id">频道 ID 或 @username</label>
-          <input type="text" id="chat_id" placeholder="例如：-100123456789 或 @channelname">
-        </div>
-        
-        <div class="group">
-          <label for="photo_source">图片来源</label>
-          <select id="photo_source" onchange="togglePhotoInput()">
-            <option value="url">网络图片链接</option>
-            <option value="base64">Base64 编码</option>
-            <option value="upload">上传图片</option>
-          </select>
-        </div>
-        
-        <div class="group" id="photo_url_group">
-          <label for="photo_url">图片链接 (https://...)</label>
-          <input type="url" id="photo_url" placeholder="输入图片的完整 URL">
-        </div>
-        
-        <div class="group" id="photo_base64_group" style="display:none;">
-          <label for="photo_base64">Base64 编码</label>
-          <textarea id="photo_base64" placeholder="粘贴完整的 Base64 编码（包含 data:image/jpeg;base64, 前缀）"></textarea>
-          <small>注意：上传图片后会自动填充此字段</small>
-        </div>
-        
-        <div class="group" id="photo_upload_group" style="display:none;">
-          <label for="photo_file">选择图片文件</label>
-          <input type="file" id="photo_file" accept="image/*" onchange="handleFileUpload(event)">
-          <small>支持 JPG, PNG, GIF 格式，最大 10MB</small>
-          <div id="preview-container" style="margin-top: 15px; display: none;">
-            <img id="image-preview" src="#" alt="预览" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
-          </div>
-        </div>
-        
-        <div class="group">
-          <label for="caption">说明文字 (caption，可选)</label>
-          <textarea id="caption" placeholder="输入图片说明文字（支持 HTML）"></textarea>
-        </div>
-      </div>
-      
-      <div id="text-tab" class="tab-content">
-        <div class="group">
-          <label for="text_token">Bot Token</label>
-          <input type="text" id="text_token" placeholder="输入您的 Bot Token">
-        </div>
-        
-        <div class="group">
-          <label for="text_chat_id">频道 ID 或 @username</label>
-          <input type="text" id="text_chat_id" placeholder="例如：-100123456789 或 @channelname">
-        </div>
-        
-        <div class="group">
-          <label for="message_text">消息内容</label>
-          <textarea id="message_text" placeholder="输入要发送的文字消息（支持 HTML）"></textarea>
-        </div>
-      </div>
-      
-      <div class="button-section">
-        <div class="button-header">
-          <h3>按钮设置</h3>
-          <button class="btn" onclick="addButton()">
-            <i class="fas fa-plus"></i> 添加按钮
-          </button>
-        </div>
-        
-        <div id="buttons-container">
-          <!-- 按钮将动态添加到这里 -->
-        </div>
-      </div>
-      
-      <div class="action-buttons">
-        <button class="btn generate-btn" onclick="generate()">
-          <i class="fas fa-magic"></i> 生成 Telegram 链接
-        </button>
-        <button class="btn reset-btn" onclick="resetForm()">
-          <i class="fas fa-redo"></i> 重置表单
-        </button>
-      </div>
-      
-      <div class="result-container">
-        <div class="result-title">生成的 Telegram 链接</div>
-        <div id="result">填写完毕后点击上方按钮生成链接</div>
-        <button class="btn copy-btn" onclick="copyToClipboard()">
-          <i class="fas fa-copy"></i> 复制链接到剪贴板
-        </button>
-      </div>
-      
-      <div class="instructions">
-        <h3>使用说明</h3>
-        <ul>
-          <li>获取 Bot Token：与 @BotFather 对话创建机器人并获取 Token</li>
-          <li>频道 ID：将机器人添加为频道管理员后，频道 ID 通常为负数（如 -100123456789）</li>
-          <li>图片链接：必须是可公开访问的 HTTPS 图片 URL</li>
-          <li>Base64 编码：上传图片后会自动生成</li>
-          <li>点击生成的链接将直接向 Telegram 发送消息</li>
-          <li>如需测试，请确保机器有权限发送到目标频道</li>
-        </ul>
-      </div>
-    </div>
-    
-    <footer>
-      <p>© 2023 Telegram 消息发送工具 | 轻松创建带按钮的消息</p>
-    </footer>
-  </div>
 
-  <script src="cc.js"></script>
+<div class="container">
+    <h2>Telegram 消息链接构造器</h2>
+
+    <div class="section">
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 2;">
+                <label>机器人 TOKEN</label>
+                <input type="text" id="token" placeholder="例如: 123456:ABC-DEF..." oninput="generate()">
+            </div>
+            <div style="flex: 1;">
+                <label>频道 ID / @用户名</label>
+                <input type="text" id="chatId" placeholder="例如: @my_channel" oninput="generate()">
+            </div>
+        </div>
+    </div>
+
+    <label>选择事例模式</label>
+    <div class="tabs">
+        <div class="tab active" onclick="setMode('a', this)">A. 文字 + 图片链接</div>
+        <div class="tab" onclick="setMode('b', this)">B. 文字 + Base64图片</div>
+        <div class="tab" onclick="setMode('c', this)">C. 纯文字 (无图)</div>
+    </div>
+
+    <div class="section" id="photoInput">
+        <label id="photoLabel">图片链接 / Base64 内容</label>
+        <textarea id="photoData" placeholder="请输入链接或Base64字符串" oninput="generate()">https://te.legra.ph/file/example.jpg</textarea>
+    </div>
+
+    <div class="section">
+        <label>文字内容 (Caption / Text)</label>
+        <textarea id="textContent" oninput="generate()">这是我的说明文字</textarea>
+    </div>
+
+    <hr>
+
+    <div class="section">
+        <label>生成的 API 链接：</label>
+        <div class="result-box">
+            <div id="resultUrl" class="result-url">请填写上方信息...</div>
+        </div>
+        <div class="btn-group">
+            <button class="btn-copy" onclick="copyUrl()">复制链接</button>
+            <button class="btn-test" onclick="testUrl()">浏览器模拟发送</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentMode = 'a';
+    const btnMarkup = JSON.stringify({
+        "inline_keyboard": [
+            [{"text": "查看水喝千束規則", "url": "https://te.legra.ph/%E7%BE%A4%E8%A7%84-03-07-2"}],
+            [{"text": "加入群組", "url": "https://tg.chat.chisato.org.cn/"}]
+        ]
+    });
+
+    function setMode(mode, el) {
+        currentMode = mode;
+        // UI 切换
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        
+        // 逻辑切换
+        const photoSection = document.getElementById('photoInput');
+        const photoLabel = document.getElementById('photoLabel');
+        const photoData = document.getElementById('photoData');
+
+        if (mode === 'c') {
+            photoSection.style.display = 'none';
+        } else {
+            photoSection.style.display = 'block';
+            photoLabel.innerText = mode === 'a' ? '图片链接' : 'Base64 字符串 (不带前缀)';
+            if(mode === 'b' && !photoData.value.startsWith('data')) {
+                photoData.placeholder = "不要带 data:image/jpeg;base64, 前缀";
+            }
+        }
+        generate();
+    }
+
+    function generate() {
+        const token = document.getElementById('token').value || '你的TOKEN';
+        const chatId = encodeURIComponent(document.getElementById('chatId').value || '你的频道ID');
+        const text = encodeURIComponent(document.getElementById('textContent').value);
+        const photo = encodeURIComponent(document.getElementById('photoData').value);
+        const markup = encodeURIComponent(btnMarkup);
+
+        let baseUrl = `https://api.telegram.org/bot${token}/`;
+        let finalUrl = "";
+
+        if (currentMode === 'a') {
+            finalUrl = `${baseUrl}sendPhoto?chat_id=${chatId}&photo=${photo}&caption=${text}&parse_mode=HTML&reply_markup=${markup}`;
+        } else if (currentMode === 'b') {
+            // 自动处理 Base64 的前缀补全
+            const base64Raw = document.getElementById('photoData').value;
+            const fullBase64 = base64Raw.startsWith('data:') ? base64Raw : `data:image/jpeg;base64,${base64Raw}`;
+            finalUrl = `${baseUrl}sendPhoto?chat_id=${chatId}&photo=${encodeURIComponent(fullBase64)}&caption=${text}&parse_mode=HTML&reply_markup=${markup}`;
+        } else {
+            finalUrl = `${baseUrl}sendMessage?chat_id=${chatId}&text=${text}&parse_mode=HTML&reply_markup=${markup}`;
+        }
+
+        document.getElementById('resultUrl').innerText = finalUrl;
+    }
+
+    function copyUrl() {
+        const text = document.getElementById('resultUrl').innerText;
+        navigator.clipboard.writeText(text).then(() => alert('已复制到剪贴板'));
+    }
+
+    function testUrl() {
+        const text = document.getElementById('resultUrl').innerText;
+        window.open(text, '_blank');
+    }
+
+    // 初始化执行一次
+    generate();
+</script>
+
 </body>
 </html>
