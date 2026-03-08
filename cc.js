@@ -217,4 +217,18 @@ function resetForm() {
     
     document.getElementById('result').innerText = '填写完毕后点击上方按钮生成链接';
   }
+  /* 保持之前的CSS不变，只添加预览相关样式 */
+#preview-container {
+  margin-top: 15px;
+  display: none;
+  text-align: center;
+}
+
+#image-preview {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
 }
