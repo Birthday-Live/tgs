@@ -1,47 +1,39 @@
 /**
- * Telegram 消息发送核心逻辑
- * 文件名: cc.js
+ * 核心逻辑文件: cc.js
  */
 
 let currentMode = 'a';
-const keyboard = {
-    "inline_keyboard": [
-        [{"text": "查看水喝千束規則", "url": "https://te.legra.ph/%E7%BE%A4%E8%A7%84-03-07-2"}],
-        [{"text": "加入群組", "url": "https://tg.chat.chisato.org.cn/"}]
-    ]
-};
 
-// 切换 A/B/C 模式
+// 切换模式
 function setMode(m, el) {
     currentMode = m;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
-    
-    const uploadBox = document.getElementById('uploadBox');
-    const imageGroup = document.getElementById('imageGroup');
-    const dataLabel = document.getElementById('dataLabel');
-
-    if (m === 'c') {
-        imageGroup.style.display = 'none';
-    } else {
-        imageGroup.style.display = 'block';
-        uploadBox.style.display = (m === 'b') ? 'block' : 'none';
-        dataLabel.innerText = (m === 'b') ? '图片 Base64 数据' : '图片 URL 链接';
-    }
+    document.getElementById('uploadBox').style.display = (m === 'b') ? 'block' : 'none';
+    document.getElementById('imageGroup').style.display = (m === 'c') ? 'none' : 'block';
+    document.getElementById('dataLabel').innerText = (m === 'b') ? 'Base64 数据' : '图片 URL';
 }
 
-// 处理本地图片转 Base64
+// 处理图片上传
 function handleFile(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
-        document.getElementById('imageData').value = e.target.result;
-    };
+    reader.onload = (e) => { document.getElementById('imageData').value = e.target.result; };
     reader.readAsDataURL(file);
 }
 
-// 执行发送逻辑
+// 获取当前的按钮配置
+function getKeyboard() {
+    return {
+        "inline_keyboard": [
+            [{"text": document.getElementById('btn1Text').value, "url": document.getElementById('btn1Url').value}],
+            [{"text": document.getElementById('btn2Text').value, "url": document.getElementById('btn2Url').value}]
+        ]
+    };
+}
+
+// 执行发送
 async function startSend() {
     const token = document.getElementById('token').value.trim();
     const chatId = document.getElementById('chatId').value.trim();
@@ -51,11 +43,9 @@ async function startSend() {
 
     if (!token || !chatId) return alert("请填写 Token 和 Chat ID");
 
-    out.innerText = "正在尝试发送 (Fetch)...";
-    out.style.color = "#abb2bf";
-
     const apiMethod = (currentMode === 'c') ? 'sendMessage' : 'sendPhoto';
     const apiUrl = `https://api.telegram.org/bot${token}/${apiMethod}`;
+    const keyboard = getKeyboard(); // 动态获取按钮
 
     try {
         const payload = {
@@ -74,21 +64,13 @@ async function startSend() {
 
         const result = await response.json();
         out.innerText = JSON.stringify(result, null, 2);
-        out.style.color = result.ok ? "#98c379" : "#e06c75";
-
     } catch (err) {
-        // 如果 Fetch 报错 (例如 Failed to fetch)，自动降级到 Form 提交
-        out.innerText = "Fetch 失败，正在尝试强制模式 (Form Submit)...";
-        out.style.color = "#d19a66";
-        
-        setTimeout(() => {
-            fallbackFormSend(apiUrl, chatId, text, photo);
-        }, 1000);
+        fallbackFormSend(apiUrl, chatId, text, photo, keyboard);
     }
 }
 
-// 强制模式：通过隐藏表单提交（解决跨域和超长 Base64 问题）
-function fallbackFormSend(url, chatId, text, photo) {
+// 表单降级发送
+function fallbackFormSend(url, chatId, text, photo, keyboard) {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = url;
@@ -110,10 +92,7 @@ function fallbackFormSend(url, chatId, text, photo) {
         input.style.display = 'none';
         form.appendChild(input);
     }
-
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);
-    
-    document.getElementById('apiOutput').innerText += "\n\n[强制模式] 已弹出新窗口发送，请查看窗口回执。";
 }
