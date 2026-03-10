@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiliBili</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* 按钮之间的间距 */
+            width: 80%;
+            max-width: 300px;
+        }
+        .btn {
+            display: block;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: transform 0.2s, background-color 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        /* 第一个按钮颜色：B站粉 */
+        .btn-1 {
+            background-color: #fb7299;
+        }
+        /* 第二个按钮颜色：清爽蓝 */
+        .btn-2 {
+            background-color: #00aeec;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="https://b23.tv/1NE6ycz" class="btn btn-1">水喝千束</a>
+        <a href="https://b23.tv/o7b2x5u" class="btn btn-2">次放</a>
+    </div>
+
+</body>
+</html>
